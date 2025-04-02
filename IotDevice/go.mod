@@ -1,11 +1,11 @@
-module pico
+module IOTDEVICE
 
-go 1.24.1
-
-require github.com/soypat/cyw43439 v0.0.0-20250222151126-af3e63a269de
+go 1.20
 
 require (
-	github.com/soypat/seqs v0.0.0-20240527012110-1201bab640ef // indirect
-	github.com/tinygo-org/pio v0.0.0-20231216154340-cd888eb58899 // indirect
-	golang.org/x/exp v0.0.0-20241204233417-43b7b7cde48d // indirect
+	github.com/soypat/natiu-mqtt v0.5.1
+	github.com/soypat/saleae v0.0.0-20230402180913-3584b7515dae
+	github.com/soypat/seqs v0.0.0-20240527012110-1201bab640ef
+	github.com/tinygo-org/pio v0.0.0-20231216154340-cd888eb58899
+	golang.org/x/exp v0.0.0-20230728194245-b0cb94b80691
 )

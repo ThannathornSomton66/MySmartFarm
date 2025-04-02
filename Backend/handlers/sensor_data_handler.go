@@ -9,7 +9,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// Handler to create new sensor data
+// Handler to create new sensor data then return the server time
 func CreateSensorData(db *gorm.DB) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		var data models.SensorData
@@ -33,7 +33,10 @@ func CreateSensorData(db *gorm.DB) fiber.Handler {
 			})
 		}
 
-		return c.Status(fiber.StatusCreated).JSON(data)
+		// ✅ **Return only `ServerTime`**
+		return c.Status(fiber.StatusCreated).JSON(fiber.Map{
+			"serverTime": time.Now().Format(time.RFC3339), // Return only server time
+		})
 	}
 }
 

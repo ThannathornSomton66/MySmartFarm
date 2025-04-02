@@ -7,6 +7,7 @@ import (
 	"my-smart-farm/handlers"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"gorm.io/gorm"
 )
 
@@ -30,6 +31,7 @@ func main() {
 
 	// Initialize Fiber
 	app := fiber.New()
+	app.Use(cors.New())
 
 	// Set up API routes
 	setupRoutes(app, db)
