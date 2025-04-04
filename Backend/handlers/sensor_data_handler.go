@@ -9,7 +9,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// Handler to create new sensor data then return the server time
 func CreateSensorData(db *gorm.DB) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		var data models.SensorData
@@ -30,9 +29,28 @@ func CreateSensorData(db *gorm.DB) fiber.Handler {
 			})
 		}
 
-		// Just return interval (in seconds)
+		// Default fallback interval
+		interval := 60
+
+		var setting models.IntervalSetting
+		err := db.First(&setting, "device_id = ?", data.DeviceID).Error
+		if err == nil {
+			interval = setting.IntervalSeconds
+		} else if err == gorm.ErrRecordNotFound {
+			setting = models.IntervalSetting{
+				DeviceID:        data.DeviceID,
+				IntervalSeconds: interval,
+			}
+			db.Create(&setting)
+		}
+
+		// Align interval: compute time until next aligned slot
+		now := time.Now()
+		elapsed := now.Unix() % int64(interval)
+		wait := interval - int(elapsed) // seconds until next aligned time
+
 		return c.Status(fiber.StatusCreated).JSON(fiber.Map{
-			"intervalSeconds": 30, // or any value you want
+			"intervalSeconds": wait,
 		})
 	}
 }

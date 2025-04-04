@@ -19,7 +19,11 @@ func InitDB() {
 	}
 
 	// AutoMigrate will create/modify the table based on the SensorData struct
-	if err := DB.AutoMigrate(&models.SensorData{}); err != nil {
+	if err := DB.AutoMigrate(
+		&models.SensorData{},
+		&models.IntervalSetting{}, // ✅ Add this line
+	); err != nil {
 		log.Fatal("Failed to migrate database:", err)
 	}
+	DB.AutoMigrate(&models.RelayDevice{})
 }

@@ -4,107 +4,35 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Smart Farm Dashboard</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      margin: 0;
-      padding: 0;
-      background: #f3f4f6;
-    }
-    header {
-      background: #2d3748;
-      color: white;
-      padding: 1rem;
-      text-align: center;
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 1rem;
-      padding: 1rem;
-    }
-    .card {
-      background: white;
-      padding: 1rem;
-      border-radius: 8px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-    }
-    .device-id {
-      font-weight: bold;
-      margin-bottom: 0.5rem;
-    }
-    .timestamp {
-      color: gray;
-      font-size: 0.9rem;
-    }
-  </style>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
 </head>
 <body>
 
-<header>
-  <h1>Smart Farm Dashboard</h1>
-</header>
+  <header>
+    <h1>Smart Farm Dashboard</h1>
+  </header>
 
-<div class="grid" id="sensor-grid">
-  <!-- Cards will be injected here -->
-</div>
+  <div class="grid" id="sensor-grid">
+    <!-- Cards will be rendered here -->
+  </div>
+  <div class="card">
+    <label>
+      ⏱️ Time Axis Interval:
+      <select id="xAxisInterval">
+        <option value="">Auto</option>
+        <option value="minute-5">Every 5 minutes</option>
+        <option value="minute-30">Every 30 minutes</option>
+        <option value="hour-1">Every 1 hour</option>
+        <option value="hour-3">Every 3 hours</option>
+      </select>
+    </label>
+    <h3>🌡️ Temperature (sensor-001)</h3>
+    <canvas id="tempChart" width="400" height="200"></canvas>
+  </div>
 
-<script>
-  async function loadData() {
-    try {
-      const res = await fetch('http://127.0.0.1:3000/api/v1/data');
-      const data = await res.json();
-//       const data = [
-//     {
-//       DeviceID: "sensor-001",
-//       Temperature: 25.4,
-//       Humidity: 60.2,
-//       Timestamp: "2025-03-31T11:00:00+07:00"
-//     },
-//     {
-//       DeviceID: "sensor-002",
-//       Temperature: 28.1,
-//       Humidity: 54.8,
-//       Timestamp: "2025-03-31T11:03:00+07:00"
-//     },
-//     {
-//       DeviceID: "sensor-003",
-//       Temperature: 23.9,
-//       Humidity: 67.0,
-//       Timestamp: "2025-03-31T11:04:00+07:00"
-//     }
-//   ];
-      const container = document.getElementById('sensor-grid');
-      container.innerHTML = '';
-
-      // Group by DeviceID, keep only latest per device
-      const latestByDevice = {};
-      for (const d of data) {
-        const existing = latestByDevice[d.DeviceID];
-        if (!existing || new Date(d.Timestamp) > new Date(existing.Timestamp)) {
-          latestByDevice[d.DeviceID] = d;
-        }
-      }
-
-      Object.values(latestByDevice).forEach(d => {
-        const card = document.createElement('div');
-        card.className = 'card';
-        card.innerHTML = `
-          <div class="device-id">${d.DeviceID}</div>
-          <div>🌡️ Temp: ${d.Temperature}°C</div>
-          <div>💧 Humidity: ${d.Humidity}%</div>
-          <div class="timestamp">Last updated: ${new Date(d.Timestamp).toLocaleString()}</div>
-        `;
-        container.appendChild(card);
-      });
-    } catch (err) {
-      console.error('Failed to fetch data:', err);
-    }
-  }
-
-  loadData();
-  setInterval(loadData, 60000); // refresh every 60 seconds
-</script>
-
+  <script src="script.js"></script>
 </body>
 </html>

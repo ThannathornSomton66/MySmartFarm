@@ -22,6 +22,14 @@ func setupRoutes(app *fiber.App, db *gorm.DB) {
 
 	// GET /api/v1/data/device/:deviceID -> Retrieve data by device
 	api.Get("/data/device/:deviceID", handlers.GetSensorDataByDeviceID(db))
+
+	api.Post("/interval", handlers.SetInterval(db))
+	api.Get("/intervals", handlers.GetAllIntervals(db))
+	api.Post("/relay/register", handlers.RegisterRelayIP(db))
+	api.Get("/relay/:deviceID", handlers.GetRelayIP(db))
+	api.Get("/relays", handlers.GetAllRelays(db))
+	api.Post("/relay/:deviceID/:action", handlers.ProxyRelayCommand(db))
+
 }
 
 func main() {
