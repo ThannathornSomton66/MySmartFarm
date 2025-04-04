@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"net/netip"
 	"strconv"
+	"strings"
 	"time"
 
 	_ "embed"
@@ -98,10 +99,10 @@ func main() {
 
 		// Build JSON payload
 		payload := []byte(`{
-  "deviceID": "sensor-001",
-  "temperature": ` + strconv.FormatFloat(temperature, 'f', 2, 64) + `,
-  "humidity": ` + strconv.FormatFloat(humidity, 'f', 2, 64) + `
-}`)
+			"deviceID": "sensor-001",
+			"temperature": ` + strconv.FormatFloat(temperature, 'f', 2, 64) + `,
+			"humidity": ` + strconv.FormatFloat(humidity, 'f', 2, 64) + `
+		  }`)
 
 		contentLen := strconv.Itoa(len(payload))
 		extraHeaders := []byte("Content-Type: application/json\r\n" +
@@ -163,88 +164,37 @@ func main() {
 			continue
 		}
 
-		println("Raw response from server:")
+		println("Raw response from server:asd")
 		println(string(rxBuf[:n]))
 
-		// Parse server response
-		serverTime := parseServerTime(rxBuf[:n])
+		closeConn("end-of-loop")
 
-		// Close the connection gracefully
-		closeConn("done")
+		// Parse server response for interval
+		var jsonResponse struct {
+			IntervalSeconds int `json:"intervalSeconds"`
+		}
 
-		// Align to next 5-minute mark based on server time
-		if !serverTime.IsZero() {
-			// You can adjust this to 1 * time.Hour if needed
-			const alignInterval = 5 * time.Minute
-
-			// Find next aligned time
-			truncated := serverTime.Truncate(alignInterval)
-			nextTime := truncated.Add(alignInterval)
-			sleepDuration := nextTime.Sub(serverTime)
-
-			if sleepDuration < 0 {
-				sleepDuration = alignInterval // fallback in rare case of wrap
-			}
-
-			slog.Info("Aligning to next 5-min mark",
-				slog.String("now", serverTime.Format(time.RFC3339)),
-				slog.String("next", nextTime.Format(time.RFC3339)),
-				slog.Duration("sleep", sleepDuration),
-			)
-
-			time.Sleep(sleepDuration)
-		} else {
-			slog.Warn("No server time available, using default fallback interval")
+		respStr := string(rxBuf[:n])
+		headerBodySplit := "\r\n\r\n"
+		splitIdx := strings.Index(respStr, headerBodySplit)
+		if splitIdx == -1 {
+			slog.Warn("HTTP response malformed, no header/body split found")
 			time.Sleep(5 * time.Minute)
+			continue
+		}
+		body := respStr[splitIdx+len(headerBodySplit):]
+
+		err = json.Unmarshal([]byte(body), &jsonResponse)
+		if err != nil || jsonResponse.IntervalSeconds <= 0 {
+			slog.Warn("Failed to parse intervalSeconds or missing, using default")
+			time.Sleep(5 * time.Minute)
+			continue
 		}
 
-	}
-}
+		// Sleep based on received interval
+		sleepDuration := time.Duration(jsonResponse.IntervalSeconds) * time.Second
+		slog.Info("Sleeping until next send", slog.Duration("sleep", sleepDuration))
+		time.Sleep(sleepDuration)
 
-// Function to parse server time from response JSON
-func parseServerTime(response []byte) time.Time {
-	// Find where the headers end: look for "\r\n\r\n"
-	headerEnd := []byte("\r\n\r\n")
-	bodyStart := 0
-	if i := indexOf(response, headerEnd); i != -1 {
-		bodyStart = i + len(headerEnd)
 	}
-
-	body := response[bodyStart:]
-
-	var jsonResponse struct {
-		ServerTime string `json:"serverTime"`
-	}
-	err := json.Unmarshal(body, &jsonResponse)
-	if err != nil {
-		slog.Error("Failed to parse server time", slog.String("err", err.Error()))
-		println("RAW BODY:")
-		println(string(body))
-		return time.Time{}
-	}
-
-	serverTime, err := time.Parse(time.RFC3339, jsonResponse.ServerTime)
-	if err != nil {
-		slog.Error("Invalid server time format", slog.String("err", err.Error()))
-		return time.Time{}
-	}
-
-	slog.Info("Parsed server time", slog.String("server_time", serverTime.String()))
-	return serverTime
-}
-
-func indexOf(buf []byte, sep []byte) int {
-	for i := 0; i <= len(buf)-len(sep); i++ {
-		match := true
-		for j := range sep {
-			if buf[i+j] != sep[j] {
-				match = false
-				break
-			}
-		}
-		if match {
-			return i
-		}
-	}
-	return -1
 }

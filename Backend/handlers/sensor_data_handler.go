@@ -14,28 +14,25 @@ func CreateSensorData(db *gorm.DB) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		var data models.SensorData
 
-		// Parse JSON from request body into 'data'
 		if err := c.BodyParser(&data); err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 				"error": "Cannot parse JSON",
 			})
 		}
 
-		// If the client didn't provide a timestamp, set it to "now"
 		if data.Timestamp.IsZero() {
 			data.Timestamp = time.Now()
 		}
 
-		// Insert data into the database
 		if err := db.Create(&data).Error; err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 				"error": "Failed to save data",
 			})
 		}
 
-		// ✅ **Return only `ServerTime`**
+		// Just return interval (in seconds)
 		return c.Status(fiber.StatusCreated).JSON(fiber.Map{
-			"serverTime": time.Now().Format(time.RFC3339), // Return only server time
+			"intervalSeconds": 30, // or any value you want
 		})
 	}
 }
